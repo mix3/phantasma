@@ -1,0 +1,3 @@
+#!/bin/bash
+
+GOPATH=/home/vagrant /home/vagrant/.goenv/shims/go run main.go $*

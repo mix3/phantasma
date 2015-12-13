@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>phantasma</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.9.1/bootstrap-table.min.css">
+    <style type="text/css">
+    body {
+      padding-top:    30px;
+      padding-bottom: 30px;
+      font-family:    "ヒラギノ丸ゴ Pro W4","ヒラギノ丸ゴ Pro","Hiragino Maru Gothic Pro","ヒラギノ角ゴ Pro W3","Hiragino Kaku Gothic Pro","HG丸ｺﾞｼｯｸM-PRO","HGMaruGothicMPRO";
+    }
+    </style>
+  </head>
+  <body>
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">phantasma</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="#">Container List</a></li>
+            <li><a href="/image/list">Image List</a></li>
+            <li><a href="/launcher">Launcher</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container" role="main">
+      <div class="page-header">
+        <h1>Container List</h1>
+      </div>
+
+      <table class="table" id="table"
+	     data-classes="table table-hover table-striped table-no-bordered"
+	     data-toggle="table"
+             data-url="/api/list"
+             data-response-handler="handler">
+        <thead>
+        <tr>
+          <th data-field="subdomain">Subdomain</th>
+          <th data-field="uuid">UUID</th>
+          <th data-field="image">Image Name</th>
+	  <!--
+          <th data-field="host">IP</th>
+          <th data-field="port">Port</th>
+	  -->
+          <th data-field="env"
+              data-formatter="envFormatter">Env</th>
+          <th data-field="running"
+	      data-formatter="runningFormatter"
+	      data-align="center">Running</th>
+          <th data-align="center"
+	      data-formatter="terminateFormatter"
+              data-events="terminateEvents">Terminate</th>
+        </tr>
+        </thead>
+      </table>
+
+    </div>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.9.1/bootstrap-table.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.9.1/locale/bootstrap-table-ja-JP.min.js"></script>
+
+    <script>
+      function handler(res) {
+        return res.result
+      }
+      function runningFormatter(value, row, index) {
+	var icon = '<span class="glyphicon glyphicon-ok-circle text-success" aria-hidden="true"></span>';
+        if (!value) {
+            icon = '<span class="glyphicon glyphicon-remove-circle text-danger" aria-hidden="true"></span>';
+        }
+        return icon;
+      }
+      function envFormatter(value, row, index) {
+        var res = [];
+        row.env.forEach(function(e) {
+          res.push(e.key + "=" + e.val);
+        })
+        return res.join(' ');
+      }
+      function terminateFormatter(value, row, index) {
+        return [
+          '<a class="remove" href="javascript:void(0)" title="Remove">',
+          '<i class="glyphicon glyphicon-off text-danger"></i>',
+          '</a>'
+        ].join('')
+      }
+      window.terminateEvents = {
+        'click .remove': function(e, value, row, index) {
+          if (!confirm('Are you sure you want to terminate the container?')) {
+            return false
+          }
+
+          $.ajax({
+            url:      '/api/terminate',
+            method:   'POST',
+            dataType: 'json',
+            data:     { subdomain: row.subdomain },
+          }).then(function(data) {
+            if (data.result === "ok") {
+              $(location).attr('href', '/');
+            } else {
+              alert(data)
+            }
+          })
+        }
+      };
+    </script>
+  </body>
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>phantasma</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css">
+    <style type="text/css">
+    body {
+      padding-top:    30px;
+      padding-bottom: 30px;
+      font-family:    "ヒラギノ丸ゴ Pro W4","ヒラギノ丸ゴ Pro","Hiragino Maru Gothic Pro","ヒラギノ角ゴ Pro W3","Hiragino Kaku Gothic Pro","HG丸ｺﾞｼｯｸM-PRO","HGMaruGothicMPRO";
+    }
+    </style>
+  </head>
+  <body>
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">phantasma</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/">Container List</a></li>
+            <li><a href="/image/list">Image List</a></li>
+            <li class="active"><a href="#">Launcher</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container" role="main">
+      <div class="page-header">
+        <h1>Launcher</h1>
+      </div>
+
+      <form id="launch-form" class="form-horizontal">
+        <div class="form-group">
+          <label class="col-sm-2 control-label">Subdomain (*)</label>
+          <div class="col-sm-10">
+            <input type="text" class="form-control" id="subdomain" name="subdomain">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-2 control-label">Image Id (*)</label>
+          <div class="col-sm-10">
+            <select class="form-control image-group" id="image_id" name="image_id">
+              <option value=""></option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-2 control-label">Port</label>
+          <div class="col-sm-10">
+            <input type="text" class="form-control" id="port" name="port">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-2 control-label">Net</label>
+          <div class="col-sm-10">
+            <input type="text" class="form-control" id="net" name="net">
+          </div>
+        </div>
+
+        <div class="form-group form-inline">
+          <label class="col-sm-2 control-label">Env</label>
+	  <div class="col-sm-10">
+            <label class="control-label">Key</label>
+            <input type="text" class="form-control" id="add-env-key" name="add-env-key">
+            <label class="control-label">Val</label>
+            <input type="text" class="form-control" id="add-env-val" name="add-env-val">
+            <button type="button" class="btn btn-default" id="add-env">Add Env</button>
+	  </div>
+	</div>
+        <div class="form-group">
+          <div class="col-sm-offset-2 col-sm-6">
+            <table class="table">
+	      <thead>
+                <tr>
+	          <th>Key</th>
+	          <th>Val</th>
+		  <th>Del</th>
+		</tr>
+              </thead>
+	      <tbody id="env-list">
+                <script id="env-list-tmpl" type="text/x-handlebars-template">
+                  {{#each this}}
+                    <tr>
+	              <td>{{key}}</td>
+	              <td>{{val}}</td>
+	              <td>
+                        <a class="env-del" href="javascript:void(0)">
+                          <i class="glyphicon glyphicon-remove text-danger"></i>
+                        </a>
+                      </td>
+	            </tr>
+                  {{/each}}
+                </script>
+              </tbody>
+            </table>
+	  </div>
+	</div>
+
+        <div class="form-group">
+          <div class="col-sm-offset-2 col-sm-10">
+            <button type="submit" class="btn btn-default">Launch</button>
+          </div>
+        </div>
+      </form>
+
+    </div>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="//ajax.aspnetcdn.com/ajax/jquery.validate/1.14.0/jquery.validate.min.js"></script>
+    <script src="//ajax.aspnetcdn.com/ajax/jquery.validate/1.14.0/additional-methods.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
+
+    <script>
+      $(function() {
+        var image_ids   = [];
+        var image_names = [];
+
+        $.ajax({
+          url: "/api/image/list"
+        }).then(function(data){
+          $.each(data.result, function(i, v) {
+            var short_id = v.id.slice(0, 19)
+            $("#image_id").append($("<option>").val(v.id).text("("+short_id+") "+v.name+":"+v.version));
+          })
+        });
+
+        // from http://stackoverflow.com/questions/280759/jquery-validate-how-to-add-a-rule-for-regular-expression-validation
+        $.validator.addMethod(
+          "regex",
+          function(value, element, regexp) {
+            var re = new RegExp(regexp);
+            return this.optional(element) || re.test(value);
+          },
+          "Please check your input."
+        );
+
+        $.validator.setDefaults({
+          errorClass : 'has-error',
+          validClass : 'has-success',
+          highlight : function(element, errorClass, validClass) {
+            $(element).closest('.form-group').addClass(errorClass).removeClass(validClass);
+          },
+          unhighlight : function(element, errorClass, validClass) {
+            $(element).closest('.form-group').removeClass(errorClass).addClass(validClass);
+          }
+        });
+
+        $('#launch-form').validate({
+          debug: true,
+          submitHandler: function(form) {
+            var f = $(form);
+            var port = f.find('#port').val();
+            var net  = f.find('#net').val();
+
+            var data = {
+              subdomain: f.find('#subdomain').val(),
+              image_id:  f.find('#image_id').val(),
+            };
+
+            if (port !== "") {
+              data.port = port;
+            }
+            if (net !== "") {
+              data.net = net;
+            }
+
+            if (0 < EnvFormApp.env.length) {
+              data.env = [];
+              EnvFormApp.env.forEach(function(e) {
+                data.env.push(e.key + "=" + e.val);
+              })
+            }
+
+            $.ajax({
+              url:         '/api/launch',
+              method:      'POST',
+              dataType:    'json',
+              data:        data,
+              traditional: true,
+            }).then(function(data) {
+              if (data.result === "ok") {
+                $(location).attr('href', '/');
+              } else {
+                alert(data)
+              }
+            })
+          },
+	  rules: {
+            subdomain: {
+              required: true,
+              regex:    "^[a-zA-Z0-9-.]+$",
+	    },
+	    image_id: {
+              required: true,
+	    },
+	    port: {
+              digits: true,
+              max:    65535,
+	    },
+	    net: {},
+	  },
+        });
+
+        var EnvFormApp = {
+          init: function() {
+            this.env = [];
+            this.$keyForm    = $('#add-env-key');
+            this.$valForm    = $('#add-env-val');
+            this.envListTmpl = Handlebars.compile($('#env-list-tmpl').html());
+	    this.bindEvents();
+	  },
+	  bindEvents: function() {
+            $('#add-env').on('click', this.add.bind(this));
+            $('#env-list').on('click', '.env-del', this.del.bind(this));
+	  },
+          render: function() {
+            $('#env-list').html(this.envListTmpl(this.env));
+	  },
+          add: function(e){
+	    this.env.push({
+              key: this.$keyForm.val(),
+              val: this.$valForm.val(),
+	    });
+            this.$keyForm.val("");
+            this.$valForm.val("");
+            this.render();
+	  },
+	  del: function(e) {
+            var index = $('.env-del').index(e.target.closest('a'));
+            this.env.splice(index, 1);
+            this.render();
+	  },
+	};
+	EnvFormApp.init();
+      });
+    </script>
+  </body>
+</html>
