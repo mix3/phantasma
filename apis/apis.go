@@ -190,7 +190,7 @@ Description=%s
 
 [Service]
 ExecStartPre=/bin/sh -c '/bin/echo \'%s\' > %s'
-ExecStart=%s --insecure-options=%s run --store-only --pod-manifest=%s
+ExecStart=%s --insecure-options=%s run --pod-manifest=%s
 KillMode=mixed
 `,
 		serviceName,
